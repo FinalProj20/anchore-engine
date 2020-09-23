@@ -1,19 +1,17 @@
 import connexion
 
 import anchore_engine.apis
-from anchore_engine import db
-import anchore_engine.services.catalog.catalog_impl
 import anchore_engine.common
+import anchore_engine.configuration.localconfig
+import anchore_engine.services.catalog.catalog_impl
+import anchore_engine.subsys.servicestatus
+from anchore_engine import db
+from anchore_engine.apis.authorization import get_authorizer, INTERNAL_SERVICE_ALLOWED
+from anchore_engine.apis.context import ApiRequestContextProxy
+from anchore_engine.db import db_image_inventory
+from anchore_engine.services.catalog import archiver
 from anchore_engine.services.catalog.archiver import ImageConflict
 from anchore_engine.subsys import logger
-import anchore_engine.configuration.localconfig
-import anchore_engine.subsys.servicestatus
-from anchore_engine.clients.services import internal_client_for
-from anchore_engine.clients.services.policy_engine import PolicyEngineClient
-from anchore_engine.apis.authorization import get_authorizer, INTERNAL_SERVICE_ALLOWED
-from anchore_engine.db import AccountTypes
-from anchore_engine.apis.context import ApiRequestContextProxy
-from anchore_engine.services.catalog import archiver
 from anchore_engine.subsys.metrics import flask_metrics
 
 authorizer = get_authorizer()
@@ -571,3 +569,38 @@ def system_subscriptions_get():
 
     return return_object, httpcode
 
+
+@authorizer.requires_account(with_types=INTERNAL_SERVICE_ALLOWED)
+def get_image_inventory(inventory_type, state=None):
+    try:
+        request_inputs = anchore_engine.apis.do_request_prep(connexion.request, default_params={})
+        with db.session_scope() as session:
+            inventory_dict = db_image_inventory.list_image_inventory_by_type(request_inputs['userId'],
+                                                                             inventory_type,
+                                                                             state,
+                                                                             session)
+            return_object = list(inventory_dict.values())
+            logger.info(str(len(return_object)))
+            httpcode = 200
+    except Exception as err:
+        logger.exception('Error fetching image inventory')
+        httpcode = 500
+        return_object = str(err)
+    return return_object, httpcode
+
+
+@authorizer.requires_account(with_types=INTERNAL_SERVICE_ALLOWED)
+def add_image_inventory(inventory_type, inventory):
+    try:
+        request_inputs = anchore_engine.apis.do_request_prep(connexion.request, default_params={})
+        with db.session_scope() as session:
+            return_object = db_image_inventory.add_image_inventory(session,
+                                                                   request_inputs['userId'],
+                                                                   inventory_type,
+                                                                   inventory)
+            httpcode = 200
+    except Exception as err:
+        logger.exception('Error adding image inventory')
+        httpcode = 500
+        return_object = str(err)
+    return return_object, httpcode

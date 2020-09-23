@@ -331,6 +331,53 @@ paths:
           schema:
             type: object
       x-swagger-router-controller: "anchore_engine.services.catalog.api.controllers.default_controller"
+  /images/inventory/{inventory_type}:
+    get:
+      x-swagger-router-controller: "anchore_engine.services.catalog.api.controllers.default_controller"
+      operationId: "get_image_inventory"
+      x-anchore-authz-action: "get_image"
+      summary: "Return a list of the images in inventory for the given inventory_type"
+      description: "Returns a filterable list of the images that are in use (or not) for the given inventory type"
+      produces:
+        - "application/json"
+      parameters:
+        - name: inventory_type
+          in: path
+          type: string
+          required: true
+        - name: state
+          in: query
+          type: string
+          enum:
+            - active
+            - inactive
+      responses:
+        200:
+          description: "success"
+          schema:
+            $ref: "#/definitions/InventoryResults"
+    post:
+      x-swagger-router-controller: "anchore_engine.services.catalog.api.controllers.default_controller"
+      operationId: "add_image_inventory"
+      produces:
+        - "application/json"
+      consumes:
+        - "application/json"
+      parameters:
+        - name: inventory_type
+          in: path
+          type: string
+          required: true
+        - name: inventory
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/InventoryResults"
+      responses:
+        200:
+          description: "success"
+          schema:
+            $ref: "#/definitions/InventoryResults"
   /registry_lookup:
     get:
       tags:
@@ -1839,3 +1886,24 @@ definitions:
           schema_version:
             type: string
             description: Semantic version of the db schema
+  InventoryResults:
+    type: array
+    description: Inventory report for Images in Use
+    items:
+      $ref: "#/definitions/InventoryResult"
+  InventoryResult:
+    type: object
+    description: Inventory result for a specific Namespace
+    properties:
+      namespace:
+        type: string
+      image_tag:
+        type: string
+      image_repo_digest:
+        type: string
+      created_at:
+        type: integer
+      last_updated:
+        type: integer
+      state:
+        type: string

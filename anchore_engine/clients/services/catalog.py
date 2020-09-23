@@ -339,3 +339,19 @@ class CatalogClient(InternalServiceClient):
     def import_archive(self, imageDigest, fileobj):
         files = {'archive_file': ('archive_file', fileobj.read())}
         return self.call_api(http.anchy_post, 'archives/images/data/{imageDigest}/import', path_params={'imageDigest': imageDigest}, files=files)
+
+    def get_image_inventory(self, inventory_type, state=None):
+        query_params = {}
+        if state is not None:
+            query_params['state'] = state
+
+        return self.call_api(http.anchy_get,
+                             'images/inventory/{inventory_type}',
+                             path_params={'inventory_type': inventory_type},
+                             query_params=query_params)
+
+    def add_image_inventory(self, inventory_type, inventory):
+        return self.call_api(http.anchy_post,
+                             'images/inventory/{inventory_type}',
+                             path_params={'inventory_type': inventory_type},
+                             body=inventory)

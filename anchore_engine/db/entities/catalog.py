@@ -636,3 +636,21 @@ class Lease(Base, UtilMixin):
         return '<{} id={},held_by={},expires_at={},epoch={}>'.format(self.__class__.__name__, self.id, self.held_by, self.expires_at.isoformat() if self.expires_at else self.expires_at, self.epoch)
 
 
+class ImageInventory(Base, UtilMixin):
+    __tablename__ = 'image_inventory'
+
+    id = Column(String, primary_key=True)
+    account = Column(String, primary_key=True)
+    inventory_type = Column(String)
+    namespace = Column(String)
+    image_tag = Column(String)
+    image_repo_digest = Column(String)
+    created_at = Column(Integer, default=anchore_now)
+    last_updated = Column(Integer, default=anchore_now)
+    state = Column(String, default="active")
+
+    def __repr__(self):
+        return "inventory_type='%s', namespace='%s', image_tag='%s', image_repo_digest='%s', created_at='%d', " \
+               "last_updated='%d', state='%s'" % \
+               (self.inventory_type, self.namespace, self.image_tag, self.image_repo_digest,
+                self.created_at, self.last_updated, self.state)
